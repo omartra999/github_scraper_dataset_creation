@@ -1,0 +1,94 @@
+name: Scrape Dataset Chain
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scrape-dataset-chain
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    env:
+      TARGET_ROWS: "5500"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyGithub requests tqdm pandas jupyter nbconvert
+
+      - name: Verify token
+        env:
+          GITHUB_TOKEN: ${{ secrets.SCRAPER_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "$GITHUB_TOKEN" ]; then
+            echo "GITHUB_TOKEN is missing"
+            exit 1
+          fi
+
+      - name: Check current dataset size
+        id: progress
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          target = int(os.environ["TARGET_ROWS"])
+          path = Path("dataset_quality.jsonl")
+          if not path.exists():
+            count = 0
+          else:
+            with path.open("r", encoding="utf-8") as f:
+              count = sum(1 for line in f if line.strip())
+
+          done = count >= target
+          print(f"Current rows: {count} / target: {target}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+            out.write(f"count={count}\\n")
+            out.write(f"done={'true' if done else 'false'}\\n")
+          PY
+
+      - name: Execute scraper notebook chunk
+        if: steps.progress.outputs.done != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.SCRAPER_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          python -m jupyter nbconvert \
+            --to notebook \
+            --execute scrape_notebook.ipynb \
+            --output scrape_notebook.executed.ipynb \
+            --ExecutePreprocessor.timeout=0
+
+      - name: Commit progress
+        if: steps.progress.outputs.done != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add dataset_quality.jsonl scrape_state.json
+
+          if git diff --staged --quiet; then
+            echo "No progress changes to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: update scraper progress"
+          git push
