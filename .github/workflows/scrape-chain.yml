@@ -67,7 +67,9 @@ jobs:
           PY
 
       - name: Execute scraper notebook chunk
+        id: scrape_run
         if: steps.progress.outputs.done != 'true'
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.SCRAPER_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
@@ -80,7 +82,7 @@ jobs:
             --debug
 
       - name: Show progress after execution
-        if: steps.progress.outputs.done != 'true'
+        if: always() && steps.progress.outputs.done != 'true'
         run: |
           python - <<'PY'
           import json
@@ -116,7 +118,7 @@ jobs:
           PY
 
       - name: Commit progress
-        if: steps.progress.outputs.done != 'true'
+        if: always() && steps.progress.outputs.done != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -129,4 +131,11 @@ jobs:
           fi
 
           git commit -m "chore: update scraper progress"
+          git pull --rebase origin main
           git push
+
+      - name: Fail if scrape step failed
+        if: steps.progress.outputs.done != 'true' && steps.scrape_run.outcome == 'failure'
+        run: |
+          echo "Scrape execution failed after committing available checkpoints."
+          exit 1
