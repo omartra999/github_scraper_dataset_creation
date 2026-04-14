@@ -71,11 +71,49 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SCRAPER_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
+          echo "Starting notebook execution (this can run for hours)."
           python -m jupyter nbconvert \
             --to notebook \
             --execute scrape_notebook.ipynb \
             --output scrape_notebook.executed.ipynb \
-            --ExecutePreprocessor.timeout=0
+            --ExecutePreprocessor.timeout=0 \
+            --debug
+
+      - name: Show progress after execution
+        if: steps.progress.outputs.done != 'true'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data_path = Path("dataset_quality.jsonl")
+          state_path = Path("scrape_state.json")
+
+          if data_path.exists():
+            with data_path.open("r", encoding="utf-8") as f:
+              rows = sum(1 for line in f if line.strip())
+          else:
+            rows = 0
+
+          print(f"Rows collected so far: {rows}")
+
+          if state_path.exists():
+            try:
+              state = json.loads(state_path.read_text(encoding="utf-8"))
+              print(
+                "State snapshot:",
+                {
+                  "processed_repos": len(state.get("processed_repos", [])),
+                  "written": state.get("written"),
+                  "candidate_commits": state.get("candidate_commits"),
+                  "commit_errors": state.get("commit_errors"),
+                },
+              )
+            except Exception as exc:
+              print(f"Could not parse scrape_state.json: {exc}")
+          else:
+            print("No scrape_state.json found yet")
+          PY
 
       - name: Commit progress
         if: steps.progress.outputs.done != 'true'
