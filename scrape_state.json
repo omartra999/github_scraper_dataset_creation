@@ -1,25 +1,36 @@
 {
   "processed_repos": [
     "BioSTEAMDevelopmentGroup/biosteam",
+    "PostHog/posthog",
+    "PostHog/posthog-foss",
     "TomoeMami/S1PlainTextBackup",
+    "angr/angr-management",
+    "angr/cle",
     "bl4de/security-tools",
+    "cupy/cupy",
+    "dimagi/commcare-hq",
+    "emeryberger/CSrankings",
+    "getsentry/sentry",
+    "online-ml/river",
     "oscal-compass/compliance-trestle",
     "ouuan/ouuan",
     "pangeo-data/xESMF",
     "pypa/virtualenv",
     "pytorch/pytorch",
     "sqlalchemy/mako",
+    "terrapower/armi",
     "zulip/zulip"
   ],
-  "written": 27,
-  "skipped": 4870,
-  "message_matched": 130,
-  "candidate_commits": 130,
+  "written": 64,
+  "skipped": 9806,
+  "message_matched": 194,
+  "candidate_commits": 194,
   "commit_errors": 0,
   "type_counts": {
-    "general": 22,
+    "general": 43,
     "deduplicate": 2,
-    "simplify": 3
+    "simplify": 5,
+    "rename": 14
   },
-  "updated_at": 1776199859
+  "updated_at": 1776202737
 }
