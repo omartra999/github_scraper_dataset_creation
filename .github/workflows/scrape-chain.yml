@@ -63,8 +63,8 @@ jobs:
           done = count >= target
           print(f"Current rows: {count} / target: {target}")
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
-            out.write(f"count={count}\\n")
-            out.write(f"done={'true' if done else 'false'}\\n")
+            out.write(f"count={count}\n")
+            out.write(f"done={'true' if done else 'false'}\n")
           PY
 
       - name: Execute scraper notebook chunk
@@ -158,9 +158,9 @@ jobs:
 
           print(f"Rows before: {before}; after: {after}; target: {target}")
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
-            out.write(f"count={after}\\n")
-            out.write(f"done={'true' if done else 'false'}\\n")
-            out.write(f"made_progress={'true' if made_progress else 'false'}\\n")
+            out.write(f"count={after}\n")
+            out.write(f"done={'true' if done else 'false'}\n")
+            out.write(f"made_progress={'true' if made_progress else 'false'}\n")
           PY
 
       - name: Chain next run immediately
